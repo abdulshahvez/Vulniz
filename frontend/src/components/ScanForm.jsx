@@ -20,8 +20,17 @@ export default function ScanForm({ onSubmit, disabled }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!url.trim() || attacks.length === 0) return;
-    onSubmit(url.trim(), attacks);
+    let finalUrl = url.trim();
+    if (!finalUrl || attacks.length === 0) return;
+    
+    // Auto-prepend protocol if missing
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = finalUrl.startsWith('localhost') || finalUrl.startsWith('127.0.0.1') 
+        ? 'http://' + finalUrl 
+        : 'https://' + finalUrl;
+    }
+    
+    onSubmit(finalUrl, attacks);
   };
 
   return (
