@@ -15,6 +15,21 @@ export default function ResultsDashboard({ results, scanId, onReset }) {
 
   return (
     <div className="results animate-in">
+      {/* ── Scan Summary Header ──────────────────────────── */}
+      <div className="card" style={{ marginBottom: '1.5rem', borderLeft: '4px solid var(--accent)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '1.5rem' }}>🌐</div>
+          <div>
+            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              Scanned Endpoint
+            </div>
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', wordBreak: 'break-all' }}>
+              {results.targetUrl}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Top: Score + Breakdown ─────────────────────────── */}
       <div className="results__top">
         <div className="card">
