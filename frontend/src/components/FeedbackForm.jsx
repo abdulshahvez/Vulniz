@@ -10,9 +10,8 @@ export default function FeedbackForm() {
     const form = e.target;
     const formData = new FormData(form);
     
-    // Add Web3Forms access key
-    // Replace this with your actual key from https://web3forms.com/
-    formData.append("access_key", "YOUR_WEB3FORMS_ACCESS_KEY_HERE");
+    // Add Web3Forms access key from environment variable
+    formData.append("access_key", import.meta.env.VITE_WEB3FORMS_KEY);
     
     // We want the response in JSON
     formData.append("replyto", "no-reply@vulniz.com");
