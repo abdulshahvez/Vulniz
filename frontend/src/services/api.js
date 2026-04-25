@@ -35,7 +35,8 @@ export async function getReport(scanId) {
 
 /** Download PDF report */
 export function getPdfUrl(scanId) {
-  return `/api/report/${scanId}/pdf`;
+  const base = import.meta.env.VITE_API_URL || '/api';
+  return `${base}/report/${scanId}/pdf`;
 }
 
 /** Discover endpoints */
@@ -49,7 +50,8 @@ export async function discoverEndpoints(baseUrl) {
  * Returns an EventSource instance — caller must close it.
  */
 export function connectScanStream(scanId, handlers = {}) {
-  const es = new EventSource(`/api/scan/${scanId}/stream`);
+  const base = import.meta.env.VITE_API_URL || '/api';
+  const es = new EventSource(`${base}/scan/${scanId}/stream`);
 
   if (handlers.onProgress) es.addEventListener('progress', (e) => handlers.onProgress(JSON.parse(e.data)));
   if (handlers.onLog) es.addEventListener('log', (e) => handlers.onLog(JSON.parse(e.data)));
