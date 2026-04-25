@@ -218,50 +218,82 @@ export async function generateFixSuggestions(analysis, scoreReport) {
     vulnerableTypes.add(f.attackType);
   }
 
-  // If no OpenAI key, use built-in suggestions
-  if (!config.openaiApiKey || config.openaiApiKey.startsWith('sk-your')) {
-    logger.info('[AI] No OpenAI key configured — using built-in suggestions');
-    return getBuiltinSuggestions(vulnerableTypes, analysis);
-  }
+  // ── 1. Try Google Gemini (Preferred for Free Tier) ─────────────────
+  if (config.geminiApiKey && !config.geminiApiKey.startsWith('YOUR')) {
+    try {
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const genAI = new GoogleGenerativeAI(config.geminiApiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-1.5-flash',
+        generationConfig: { responseMimeType: 'application/json' }
+      });
 
-  // ── Try OpenAI ─────────────────────────────────────────────────────
-  try {
-    const { default: OpenAI } = await import('openai');
-    const openai = new OpenAI({ apiKey: config.openaiApiKey });
+      const prompt = buildPrompt(analysis, scoreReport);
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: `You are a senior application security engineer. Provide actionable, production-ready fixes for API vulnerabilities. Focus on Node.js/Express. Return JSON with keys matching each attack type. \n\n ${prompt}` }] }],
+      });
 
-    const prompt = buildPrompt(analysis, scoreReport);
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a senior application security engineer. Provide actionable, production-ready fixes for API vulnerabilities. Focus on Node.js/Express. Return JSON with keys matching each attack type.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.3,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' },
-    });
+      const response = await result.response;
+      const aiResponse = JSON.parse(response.text());
+      logger.info('[AI] Gemini suggestions generated successfully');
 
-    const aiResponse = JSON.parse(completion.choices[0].message.content);
-    logger.info('[AI] OpenAI suggestions generated successfully');
-
-    // Merge AI suggestions with built-in for completeness
-    const merged = {};
-    for (const type of vulnerableTypes) {
-      merged[type] = {
-        ...BUILTIN_FIXES[type],
-        ...(aiResponse[type] || {}),
-        source: 'ai',
-      };
+      return mergeSuggestions(vulnerableTypes, aiResponse);
+    } catch (err) {
+      logger.warn(`[AI] Gemini failed: ${err.message}`);
+      // Fall through to OpenAI if Gemini fails
     }
-    return merged;
-  } catch (err) {
-    logger.warn(`[AI] OpenAI failed — falling back to built-in: ${err.message}`);
-    return getBuiltinSuggestions(vulnerableTypes, analysis);
   }
+
+  // ── 2. Try OpenAI (Secondary) ──────────────────────────────────────
+  if (config.openaiApiKey && !config.openaiApiKey.startsWith('sk-your')) {
+    try {
+      const { default: OpenAI } = await import('openai');
+      const openai = new OpenAI({ apiKey: config.openaiApiKey });
+
+      const prompt = buildPrompt(analysis, scoreReport);
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a senior application security engineer. Provide actionable, production-ready fixes for API vulnerabilities. Focus on Node.js/Express. Return JSON with keys matching each attack type.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.3,
+        max_tokens: 4000,
+        response_format: { type: 'json_object' },
+      });
+
+      const aiResponse = JSON.parse(completion.choices[0].message.content);
+      logger.info('[AI] OpenAI suggestions generated successfully');
+
+      return mergeSuggestions(vulnerableTypes, aiResponse);
+    } catch (err) {
+      logger.warn(`[AI] OpenAI failed: ${err.message}`);
+      // Fall through to built-in
+    }
+  }
+
+  // ── 3. Fallback to Built-in ────────────────────────────────────────
+  logger.info('[AI] No AI keys configured or AI failed — using built-in suggestions');
+  return getBuiltinSuggestions(vulnerableTypes, analysis);
+}
+
+/**
+ * Merge AI response with built-in templates
+ */
+function mergeSuggestions(vulnerableTypes, aiResponse) {
+  const merged = {};
+  for (const type of vulnerableTypes) {
+    merged[type] = {
+      ...BUILTIN_FIXES[type],
+      ...(aiResponse[type] || {}),
+      source: 'ai',
+    };
+  }
+  return merged;
 }
 
 /**
