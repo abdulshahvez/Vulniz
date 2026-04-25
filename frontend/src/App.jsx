@@ -4,6 +4,7 @@ import ScanForm from './components/ScanForm.jsx';
 import ScanProgress from './components/ScanProgress.jsx';
 import ResultsDashboard from './components/ResultsDashboard.jsx';
 import LandingInfo from './components/LandingInfo.jsx';
+import FeedbackForm from './components/FeedbackForm.jsx';
 import { startScan, connectScanStream, getScanStatus } from './services/api.js';
 
 /**
@@ -134,6 +135,9 @@ export default function App() {
       {phase === 'completed' && results && (
         <ResultsDashboard results={results} scanId={scanId} onReset={handleReset} />
       )}
+
+      {/* Show feedback form at the bottom, unless currently scanning */}
+      {phase !== 'scanning' && <FeedbackForm />}
     </div>
   );
 }
