@@ -1,0 +1,28 @@
+{
+  "name": "api-attack-simulator-backend",
+  "version": "1.0.0",
+  "description": "Backend engine for API Attack Simulator — security testing platform",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "vulnerable-api": "node vulnerable-api/server.js",
+    "dev:all": "node --watch src/server.js & node --watch vulnerable-api/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.4.0",
+    "axios": "^1.7.0",
+    "uuid": "^10.0.0",
+    "dotenv": "^16.4.0",
+    "openai": "^4.60.0",
+    "winston": "^3.14.0",
+    "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {},
+  "keywords": ["api", "security", "scanner", "vulnerability", "owasp"],
+  "license": "MIT"
+}

@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+    container_name: vulniz-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - PORT=3001
+      - NODE_ENV=development
+      # Put your OpenAI API key here if needed:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    command: npm run dev
+    networks:
+      - vulniz-net
+
+  vulnerable-api:
+    build: 
+      context: ./backend
+    container_name: vulniz-vulnerable-api
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - VULNERABLE_API_PORT=3002
+    command: npm run vulnerable-api
+    networks:
+      - vulniz-net
+
+  frontend:
+    build: 
+      context: ./frontend
+    container_name: vulniz-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Required for hot-reload on some Windows/Docker setups
+      - BACKEND_URL=http://backend:3001 # Proxies /api requests to the backend container
+    depends_on:
+      - backend
+    networks:
+      - vulniz-net
+
+networks:
+  vulniz-net:
+    driver: bridge
